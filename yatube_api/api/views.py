@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.permissions import BasePermission, IsAdminUser, IsAuthenticated
 
 from .serializers import PostSerializer, CommentSerializer, GroupSerializer
-
+import pdb
 
 class GroupUserPermission(BasePermission):
 
@@ -19,7 +19,7 @@ class GroupUserPermission(BasePermission):
             return True
 
 
-class PostUserPermission(BasePermission):
+class PostCommentUserPermission(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         if request.method in ['PUT', 'PATCH', 'DELETE']:
@@ -31,40 +31,30 @@ class PostUserPermission(BasePermission):
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = (PostUserPermission, IsAuthenticated, )
+    permission_classes = (PostCommentUserPermission, IsAuthenticated, )
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-
-    # @action(detail=True, methods=['putch', 'put', 'delete'])
-    # def get_permissions(request, post_pk=None):
-    #     post = get_object_or_404(Post, pk=post_pk)
-    #     author = post.author
-    #     serializer = PostSerializer(data=request.data)
-    #     if request.user == author:
-    #         if serializer.is_valid():
-    #             serializer.save(data=request.data, partial=True)
-    #             return Response(
-    #                 serializer.data,
-    #                 status=status.HTTP_200_OK
-    #             )
-    #     else:
-    #         return Response(
-    #             serializer.errors,
-    #             status=status.HTTP_401_UNAUTHORIZED
-    #         )
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.all()
+    # queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = (PostCommentUserPermission, IsAuthenticated)
+
+    def get_queryset(self):
+        pk = self.kwargs['post_pk']
+        queryset = Comment.objects.filter(post=pk)
+        # print(self.args)
+        # print(self.__dict__)
+        # post_pk = self.kwargs['pk']
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-        serializer.save(post=self.request.post_id)
 
 
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
-    permission_classes = (GroupUserPermission, IsAuthenticated, )
+    permission_classes = (GroupUserPermission, IsAuthenticated)
