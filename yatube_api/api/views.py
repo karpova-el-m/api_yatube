@@ -1,37 +1,15 @@
-from rest_framework import viewsets
-from posts.models import Post, Group, Comment
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from django.shortcuts import get_object_or_404
-from rest_framework import status
-from rest_framework.permissions import BasePermission, IsAdminUser, IsAuthenticated
+from rest_framework import mixins, viewsets
+from rest_framework.permissions import IsAuthenticated
 
-from .serializers import PostSerializer, CommentSerializer, GroupSerializer
-
-
-class GroupUserPermission(BasePermission):
-
-    def has_permission(self, request, view):
-        if request.method in ['PUT', 'PATCH', 'POST', 'DELETE']:
-            return request.user.is_staff
-            # return status.HTTP_405_METHOD_NOT_ALLOWED
-        else:
-            return True
-
-
-class PostCommentUserPermission(BasePermission):
-
-    def has_object_permission(self, request, view, obj):
-        if request.method in ['PUT', 'PATCH', 'DELETE']:
-            return obj.author == request.user
-        else:
-            return True
+from posts.models import Comment, Group, Post
+from .permissions import PostCommentUserPermission
+from .serializers import CommentSerializer, GroupSerializer, PostSerializer
 
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = (PostCommentUserPermission, IsAuthenticated, )
+    permission_classes = (PostCommentUserPermission, IsAuthenticated)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -53,8 +31,8 @@ class CommentViewSet(viewsets.ModelViewSet):
         )
 
 
-class GroupViewSet(viewsets.ModelViewSet):
+class GroupViewSet(mixins.RetrieveModelMixin,
+                   mixins.ListModelMixin,
+                   viewsets.GenericViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
-    permission_classes = (GroupUserPermission, IsAuthenticated)
-    # permission_classes = (IsAdminUser, )
