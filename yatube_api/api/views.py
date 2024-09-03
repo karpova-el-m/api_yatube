@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import mixins, viewsets
 from rest_framework.permissions import IsAuthenticated
 
@@ -20,14 +21,13 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (PostCommentUserPermission, IsAuthenticated)
 
     def get_queryset(self):
-        pk = self.kwargs['post_pk']
-        queryset = Comment.objects.filter(post=pk)
-        return queryset
+        post = get_object_or_404(Post, id=self.kwargs['post_pk'])
+        return Comment.objects.filter(post=post.id)
 
     def perform_create(self, serializer):
         serializer.save(
             author=self.request.user,
-            post_id=self.kwargs.get('post_pk')
+            post_id=int(self.kwargs.get('post_pk'))
         )
 
 
