@@ -11,9 +11,9 @@ router = SimpleRouter()
 router.register('posts', PostViewSet)
 router.register('groups', GroupViewSet)
 router.register(
-    r'posts/(?P<post_pk>\d)/comments',
+    r'posts/(?P<post_pk>\d+)/comments',
     CommentViewSet,
-    basename='comment'
+    basename='comments'
 )
 
 urlpatterns = [
