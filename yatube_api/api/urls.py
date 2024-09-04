@@ -6,17 +6,17 @@ from .views import CommentViewSet, GroupViewSet, PostViewSet
 
 app_name = 'posts'
 
-first_version_router = SimpleRouter()
+router_v1 = SimpleRouter()
 
-first_version_router.register('v1/posts', PostViewSet)
-first_version_router.register('v1/groups', GroupViewSet)
-first_version_router.register(
-    r'v1/posts/(?P<post_pk>\d+)/comments',
+router_v1.register('posts', PostViewSet, basename='posts')
+router_v1.register('groups', GroupViewSet, basename='groups')
+router_v1.register(
+    r'posts/(?P<post_pk>\d+)/comments',
     CommentViewSet,
     basename='comments'
 )
 
 urlpatterns = [
     path('v1/api-token-auth/', views.obtain_auth_token),
-    path('', include(first_version_router.urls)),
+    path('v1/', include(router_v1.urls)),
 ]
