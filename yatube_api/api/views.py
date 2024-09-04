@@ -1,36 +1,44 @@
-from rest_framework import mixins, viewsets
+from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
 
 from posts.models import Comment, Group, Post
-from .permissions import PostCommentUserPermission
+from .permissions import IsAuthorOrReadOnly
 from .serializers import CommentSerializer, GroupSerializer, PostSerializer
 
 
 class PostViewSet(viewsets.ModelViewSet):
+    """Вьюсет для модели Post."""
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = (IsAuthenticated, PostCommentUserPermission)
+    permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
+    """Вьюсет для модели Comment."""
     serializer_class = CommentSerializer
-    permission_classes = (IsAuthenticated, PostCommentUserPermission)
+    permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
+
+    def get_post(self):
+        return get_object_or_404(Post, id=self.kwargs['post_pk'])
 
     def get_queryset(self):
-        return Comment.objects.filter(post=self.kwargs['post_pk'])
+        comments = Comment.objects.select_related('post').filter(
+            post_id=self.get_post().id
+        )
+        return comments
 
     def perform_create(self, serializer):
         serializer.save(
             author=self.request.user,
-            post_id=int(self.kwargs.get('post_pk'))
+            post_id=self.get_post().id
         )
 
 
-class GroupViewSet(mixins.RetrieveModelMixin,
-                   mixins.ListModelMixin,
-                   viewsets.GenericViewSet):
+class GroupViewSet(viewsets.ReadOnlyModelViewSet):
+    """Вьюсет для модели Group."""
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
